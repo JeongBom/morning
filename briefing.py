@@ -41,18 +41,16 @@ def get_meal():
         return None
 
 def get_news():
-    categories = {
-        "경제": "https://feeds.feedburner.com/navernews/economics",
-        "정치": "https://feeds.feedburner.com/navernews/politics",
-        "사회": "https://feeds.feedburner.com/navernews/society",
-    }
-    
     import xml.etree.ElementTree as ET
+    categories = {
+        "경제": "https://rss.naver.com/main/rss/news/economics.xml",
+        "정치": "https://rss.naver.com/main/rss/news/politics.xml",
+        "사회": "https://rss.naver.com/main/rss/news/society.xml",
+    }
     result = ""
-    
     for name, url in categories.items():
         try:
-            res = requests.get(url, timeout=5)
+            res = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
             root = ET.fromstring(res.content)
             items = root.findall(".//item")[:2]
             titles = [item.find("title").text for item in items]
@@ -60,7 +58,6 @@ def get_news():
             result += "\n".join("• " + t for t in titles) + "\n\n"
         except:
             result += name + "\n• 불러오기 실패\n\n"
-    
     return result.strip()
 def get_weather():
     res = requests.get(

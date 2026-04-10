@@ -4,7 +4,6 @@ import json
 import re
 from datetime import datetime
 
-# 환경변수
 NEIS_KEY = os.environ["NEIS_KEY"]
 KAKAO_TOKEN = os.environ["KAKAO_TOKEN"]
 KAKAO_CLIENT_ID = os.environ["KAKAO_CLIENT_ID"]
@@ -35,30 +34,29 @@ def get_meal():
     }).json()
     try:
         items = res["mealServiceDietInfo"][1]["row"][0]["DDISH_NM"].split("<br/>")
-        return "\n".join(f"• {re.sub(r'\\s*\\([\\d.,]+\\)', '', i).strip()}" for i in items if i.strip())
-    except:
-        return None
-
-def get_meal():
-    today = datetime.now().strftime("%Y%m%d")
-    res = requests.get("https://open.neis.go.kr/hub/mealServiceDietInfo", params={
-        "KEY": NEIS_KEY,
-        "Type": "json",
-        "ATPT_OFCDC_SC_CODE": ATPT_CODE,
-        "SD_SCHUL_CODE": SCHOOL_CODE,
-        "MLSV_YMD": today,
-        "MMEAL_SC_CODE": "2",
-    }).json()
-    try:
-        items = res["mealServiceDietInfo"][1]["row"][0]["DDISH_NM"].split("<br/>")
         pattern = re.compile(r'\s*\([\d.,]+\)')
         cleaned = [pattern.sub('', i).strip() for i in items if i.strip()]
-        return "\n".join(f"• {item}" for item in cleaned)
+        return "\n".join("• " + item for item in cleaned)
     except:
         return None
 
+def get_news():
+    res = requests.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + os.environ["GEMINI_API_KEY"],
+        headers={"Content-Type": "application/json"},
+        json={
+            "contents": [{
+                "parts": [{"text": "오늘 한국 주요 뉴스를 경제, 정치, 사회 분야별로 각 2개씩 한 줄 요약해줘. 형식: 분야명\n• 뉴스1\n• 뉴스2"}]
+            }],
+            "tools": [{"google_search": {}}],
+        }
+    ).json()
+    try:
+        return res["candidates"][0]["content"]["parts"][0]["text"]
+    except:
+        return "뉴스를 불러오지 못했어요."
+
 def get_weather():
-    # 학교 위치 기준 (경기도 성남 분당)
     res = requests.get(
         "https://api.open-meteo.com/v1/forecast",
         params={
@@ -77,12 +75,12 @@ def get_weather():
         51: "🌦️ 이슬비", 61: "🌧️ 비", 71: "❄️ 눈", 80: "🌧️ 소나기",
     }
     desc = weather_map.get(code, "🌈 날씨 확인 필요")
-    return f"{desc} {temp}°C"
+    return desc + " " + str(temp) + "°C"
 
 def send_kakao(token, message):
     requests.post(
         "https://kapi.kakao.com/v2/api/talk/memo/default/send",
-        headers={"Authorization": f"Bearer {token}"},
+        headers={"Authorization": "Bearer " + token},
         data={"template_object": json.dumps({
             "object_type": "text",
             "text": message,
@@ -91,19 +89,19 @@ def send_kakao(token, message):
     )
 
 def main():
-    today_str = datetime.now().strftime("%m월 %d일 (%a)").replace(
-        "Mon", "월").replace("Tue", "화").replace("Wed", "수").replace(
-        "Thu", "목").replace("Fri", "금").replace("Sat", "토").replace("Sun", "일")
+    now = datetime.now()
+    days = ["월", "화", "수", "목", "금", "토", "일"]
+    today_str = now.strftime("%m월 %d일 (") + days[now.weekday()] + ")"
 
     token = refresh_kakao_token()
     meal = get_meal()
     news = get_news()
     weather = get_weather()
 
-    msg = f"🌅 {today_str} 모닝 브리핑\n\n"
-    msg += f"🌤️ 날씨\n{weather}\n\n"
-    msg += f"📰 오늘의 뉴스\n{news}\n\n"
-    msg += f"🍱 오늘의 급식\n{meal if meal else '급식 정보 없음 (방학 또는 휴일)'}"
+    msg = "🌅 " + today_str + " 모닝 브리핑\n\n"
+    msg += "🌤️ 날씨\n" + weather + "\n\n"
+    msg += "📰 오늘의 뉴스\n" + news + "\n\n"
+    msg += "🍱 오늘의 급식\n" + (meal if meal else "급식 정보 없음 (방학 또는 휴일)")
 
     send_kakao(token, msg)
 

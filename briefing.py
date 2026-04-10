@@ -42,7 +42,7 @@ def get_meal():
 
 def get_news():
     res = requests.post(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + os.environ["GEMINI_API_KEY"],
+        ""https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + os.environ["GEMINI_API_KEY"]," + os.environ["GEMINI_API_KEY"],
         headers={"Content-Type": "application/json"},
         json={
             "contents": [{
@@ -78,6 +78,7 @@ def get_weather():
     return desc + " " + str(temp) + "°C"
 
 def send_kakao(token, message):
+    message = message[:900]  # 1000자 제한
     requests.post(
         "https://kapi.kakao.com/v2/api/talk/memo/default/send",
         headers={"Authorization": "Bearer " + token},

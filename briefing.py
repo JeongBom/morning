@@ -54,7 +54,7 @@ def get_news():
     try:
         return res["candidates"][0]["content"]["parts"][0]["text"]
     except:
-        return "뉴스를 불러오지 못했어요."
+        return "뉴스 오류: " + str(res)
 
 def get_weather():
     res = requests.get(

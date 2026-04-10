@@ -43,9 +43,9 @@ def get_meal():
 def get_news():
     import xml.etree.ElementTree as ET
     categories = {
-        "경제": "https://rss.naver.com/main/rss/news/economics.xml",
-        "정치": "https://rss.naver.com/main/rss/news/politics.xml",
-        "사회": "https://rss.naver.com/main/rss/news/society.xml",
+        "경제": "https://www.hankyung.com/feed/economy",
+        "정치": "https://www.hankyung.com/feed/politics",
+        "사회": "https://www.hankyung.com/feed/society",
     }
     result = ""
     for name, url in categories.items():

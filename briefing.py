@@ -41,21 +41,27 @@ def get_meal():
         return None
 
 def get_news():
-    res = requests.post(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=" + os.environ["GEMINI_API_KEY"],
-        headers={"Content-Type": "application/json"},
-        json={
-            "contents": [{
-                "parts": [{"text": "오늘 한국 주요 뉴스를 경제, 정치, 사회 분야별로 각 2개씩 한 줄 요약해줘. 형식: 분야명\n• 뉴스1\n• 뉴스2"}]
-            }],
-            "tools": [{"google_search": {}}],
-        }
-    ).json()
-    try:
-        return res["candidates"][0]["content"]["parts"][0]["text"]
-    except:
-        return "뉴스 오류: " + str(res)
-
+    categories = {
+        "경제": "https://feeds.feedburner.com/navernews/economics",
+        "정치": "https://feeds.feedburner.com/navernews/politics",
+        "사회": "https://feeds.feedburner.com/navernews/society",
+    }
+    
+    import xml.etree.ElementTree as ET
+    result = ""
+    
+    for name, url in categories.items():
+        try:
+            res = requests.get(url, timeout=5)
+            root = ET.fromstring(res.content)
+            items = root.findall(".//item")[:2]
+            titles = [item.find("title").text for item in items]
+            result += name + "\n"
+            result += "\n".join("• " + t for t in titles) + "\n\n"
+        except:
+            result += name + "\n• 불러오기 실패\n\n"
+    
+    return result.strip()
 def get_weather():
     res = requests.get(
         "https://api.open-meteo.com/v1/forecast",

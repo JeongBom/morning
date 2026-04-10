@@ -39,21 +39,23 @@ def get_meal():
     except:
         return None
 
-def get_news():
-    res = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={os.environ['GEMINI_API_KEY']}",
-        headers={"Content-Type": "application/json"},
-        json={
-            "contents": [{
-                "parts": [{"text": "오늘 한국 주요 뉴스를 경제, 정치, 사회 분야별로 각 2개씩 한 줄 요약해줘. 형식: 분야명\n• 뉴스1\n• 뉴스2"}]
-            }],
-            "tools": [{"google_search": {}}],
-        }
-    ).json()
+def get_meal():
+    today = datetime.now().strftime("%Y%m%d")
+    res = requests.get("https://open.neis.go.kr/hub/mealServiceDietInfo", params={
+        "KEY": NEIS_KEY,
+        "Type": "json",
+        "ATPT_OFCDC_SC_CODE": ATPT_CODE,
+        "SD_SCHUL_CODE": SCHOOL_CODE,
+        "MLSV_YMD": today,
+        "MMEAL_SC_CODE": "2",
+    }).json()
     try:
-        return res["candidates"][0]["content"]["parts"][0]["text"]
+        items = res["mealServiceDietInfo"][1]["row"][0]["DDISH_NM"].split("<br/>")
+        pattern = re.compile(r'\s*\([\d.,]+\)')
+        cleaned = [pattern.sub('', i).strip() for i in items if i.strip()]
+        return "\n".join(f"• {item}" for item in cleaned)
     except:
-        return "뉴스를 불러오지 못했어요."
+        return None
 
 def get_weather():
     # 학교 위치 기준 (경기도 성남 분당)

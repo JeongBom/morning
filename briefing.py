@@ -41,23 +41,19 @@ def get_meal():
 
 def get_news():
     res = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers={
-            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={os.environ['GEMINI_API_KEY']}",
+        headers={"Content-Type": "application/json"},
         json={
-            "model": "claude-opus-4-5",
-            "max_tokens": 1024,
-            "tools": [{"type": "web_search_20250305", "name": "web_search"}],
-            "messages": [{
-                "role": "user",
-                "content": "오늘 한국 주요 뉴스를 경제, 정치, 사회 분야별로 각 2개씩 한 줄 요약해줘. 형식: 분야명\n• 뉴스1\n• 뉴스2"
-            }]
+            "contents": [{
+                "parts": [{"text": "오늘 한국 주요 뉴스를 경제, 정치, 사회 분야별로 각 2개씩 한 줄 요약해줘. 형식: 분야명\n• 뉴스1\n• 뉴스2"}]
+            }],
+            "tools": [{"google_search": {}}],
         }
     ).json()
-    return next((b["text"] for b in res["content"] if b["type"] == "text"), "뉴스를 불러오지 못했어요.")
+    try:
+        return res["candidates"][0]["content"]["parts"][0]["text"]
+    except:
+        return "뉴스를 불러오지 못했어요."
 
 def get_weather():
     # 학교 위치 기준 (경기도 성남 분당)

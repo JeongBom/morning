@@ -1,1 +1,30 @@
+name: Morning Briefing
 
+on:
+  schedule:
+    - cron: '0 22 * * 0-4'  # KST 07:00 (UTC 22:00, 일~목 = 월~금 아침)
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run briefing
+        env:
+          NEIS_KEY: ${{ secrets.NEIS_KEY }}
+          KAKAO_TOKEN: ${{ secrets.KAKAO_TOKEN }}
+          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python briefing.py

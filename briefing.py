@@ -3,6 +3,7 @@ import os
 import json
 import re
 import pytz
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 NEIS_KEY = os.environ["NEIS_KEY"]
@@ -42,6 +43,28 @@ def get_meal():
     except:
         return None
 
+def get_news():
+    categories = {
+        "경제": "https://www.hankyung.com/feed/economy",
+        "정치": "https://www.hankyung.com/feed/politics",
+        "사회": "https://www.hankyung.com/feed/society",
+    }
+    result = ""
+    for name, url in categories.items():
+        try:
+            res = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+            root = ET.fromstring(res.content)
+            items = root.findall(".//item")[:2]
+            result += name + "\n"
+            for item in items:
+                title = item.find("title").text
+                link = item.find("link").text
+                result += "• " + title + "\n  " + link + "\n"
+            result += "\n"
+        except:
+            result += name + "\n• 불러오기 실패\n\n"
+    return result.strip()
+
 def get_weather():
     res = requests.get(
         "https://api.open-meteo.com/v1/forecast",
@@ -67,14 +90,14 @@ def get_weather():
     return desc + " " + str(temp) + "°C (최고 " + str(temp_max) + "° / 최저 " + str(temp_min) + "°)"
 
 def send_kakao(token, message):
-    message = message[:900]
+    message = message[:1900]
     requests.post(
         "https://kapi.kakao.com/v2/api/talk/memo/default/send",
         headers={"Authorization": "Bearer " + token},
         data={"template_object": json.dumps({
             "object_type": "text",
             "text": message,
-            "link": {"web_url": "https://www.naver.com"}
+            "link": {"web_url": "https://www.hankyung.com"}
         })}
     )
 
@@ -86,13 +109,17 @@ def main():
 
     token = refresh_kakao_token()
     meal = get_meal()
+    news = get_news()
     weather = get_weather()
 
-    msg = "🌅 " + today_str + " 모닝 브리핑\n\n"
-    msg += "🌤️ 날씨\n" + weather + "\n\n"
-    msg += "🍱 오늘의 급식\n" + (meal if meal else "급식 정보 없음 (방학 또는 휴일)")
+    msg1 = "🌅 " + today_str + " 모닝 브리핑\n\n"
+    msg1 += "🌤️ 날씨\n" + weather + "\n\n"
+    msg1 += "🍱 오늘의 급식\n" + (meal if meal else "급식 정보 없음 (방학 또는 휴일)")
 
-    send_kakao(token, msg)
+    msg2 = "📰 오늘의 뉴스\n\n" + news
+
+    send_kakao(token, msg1)
+    send_kakao(token, msg2)
 
 if __name__ == "__main__":
     main()

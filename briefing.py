@@ -2,6 +2,7 @@ import requests
 import os
 import json
 import re
+import pytz
 from datetime import datetime
 
 NEIS_KEY = os.environ["NEIS_KEY"]
@@ -23,7 +24,8 @@ def refresh_kakao_token():
     return res.json()["access_token"]
 
 def get_meal():
-    today = datetime.now().strftime("%Y%m%d")
+    kst = pytz.timezone("Asia/Seoul")
+    today = datetime.now(kst).strftime("%Y%m%d")
     res = requests.get("https://open.neis.go.kr/hub/mealServiceDietInfo", params={
         "KEY": NEIS_KEY,
         "Type": "json",
@@ -40,32 +42,14 @@ def get_meal():
     except:
         return None
 
-def get_news():
-    import xml.etree.ElementTree as ET
-    categories = {
-        "경제": "https://www.hankyung.com/feed/economy",
-        "정치": "https://www.hankyung.com/feed/politics",
-        "사회": "https://www.hankyung.com/feed/society",
-    }
-    result = ""
-    for name, url in categories.items():
-        try:
-            res = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
-            root = ET.fromstring(res.content)
-            items = root.findall(".//item")[:2]
-            titles = [item.find("title").text for item in items]
-            result += name + "\n"
-            result += "\n".join("• " + t for t in titles) + "\n\n"
-        except:
-            result += name + "\n• 불러오기 실패\n\n"
-    return result.strip()
 def get_weather():
     res = requests.get(
         "https://api.open-meteo.com/v1/forecast",
         params={
             "latitude": 37.35,
             "longitude": 127.12,
-            "current": "temperature_2m,weathercode,precipitation",
+            "current": "temperature_2m,weathercode",
+            "daily": "temperature_2m_max,temperature_2m_min",
             "timezone": "Asia/Seoul",
             "forecast_days": 1,
         }
@@ -73,12 +57,14 @@ def get_weather():
     current = res["current"]
     temp = current["temperature_2m"]
     code = current["weathercode"]
+    temp_max = res["daily"]["temperature_2m_max"][0]
+    temp_min = res["daily"]["temperature_2m_min"][0]
     weather_map = {
         0: "☀️ 맑음", 1: "🌤️ 대체로 맑음", 2: "⛅ 구름 조금", 3: "☁️ 흐림",
         51: "🌦️ 이슬비", 61: "🌧️ 비", 71: "❄️ 눈", 80: "🌧️ 소나기",
     }
     desc = weather_map.get(code, "🌈 날씨 확인 필요")
-    return desc + " " + str(temp) + "°C"
+    return desc + " " + str(temp) + "°C (최고 " + str(temp_max) + "° / 최저 " + str(temp_min) + "°)"
 
 def send_kakao(token, message):
     message = message[:900]
@@ -93,18 +79,17 @@ def send_kakao(token, message):
     )
 
 def main():
-    now = datetime.now()
+    kst = pytz.timezone("Asia/Seoul")
+    now = datetime.now(kst)
     days = ["월", "화", "수", "목", "금", "토", "일"]
     today_str = now.strftime("%m월 %d일 (") + days[now.weekday()] + ")"
 
     token = refresh_kakao_token()
     meal = get_meal()
-    news = get_news()
     weather = get_weather()
 
     msg = "🌅 " + today_str + " 모닝 브리핑\n\n"
     msg += "🌤️ 날씨\n" + weather + "\n\n"
-    msg += "📰 오늘의 뉴스\n" + news + "\n\n"
     msg += "🍱 오늘의 급식\n" + (meal if meal else "급식 정보 없음 (방학 또는 휴일)")
 
     send_kakao(token, msg)

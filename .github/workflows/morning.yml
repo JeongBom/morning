@@ -2,7 +2,7 @@ name: Morning Briefing
 
 on:
   schedule:
-    - cron: '0 22 * * 0-4'
+    - cron: '50 21 * * 0-4'
   workflow_dispatch:
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests pytz
 
       - name: Run briefing
         env:
@@ -26,5 +26,4 @@ jobs:
           KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
           KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: pip install requests pytz
+        run: python briefing.py

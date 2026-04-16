@@ -87,7 +87,6 @@ def main():
 
     token = refresh_kakao_token()
     meal = get_meal()
-    news = get_news()
     weather = get_weather()
 
     msg1 = "🌅 " + today_str + " 모닝 브리핑\n\n"
